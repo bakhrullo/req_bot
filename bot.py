@@ -14,6 +14,7 @@ from tgbot.middlewares.environment import EnvironmentMiddleware
 
 logger = logging.getLogger(__name__)
 
+DEBUG = False
 
 def register_all_middlewares(dp, config):
     dp.setup_middleware(EnvironmentMiddleware(config=config))
@@ -26,13 +27,13 @@ def register_all_filters(dp):
 def register_all_handlers(dp):
     register_admin(dp)
     register_user(dp)
-
-    register_echo(dp)
+    if DEBUG:
+        register_echo(dp)
 
 
 async def main():
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.INFO if DEBUG else logging.WARNING,
         format=u'%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s',
     )
     logger.info("Starting bot")
@@ -41,7 +42,6 @@ async def main():
     storage = RedisStorage2() if config.tg_bot.use_redis else MemoryStorage()
     bot = Bot(token=config.tg_bot.token, parse_mode='HTML')
     dp = Dispatcher(bot, storage=storage)
-
     bot['config'] = config
 
     register_all_middlewares(dp, config)
