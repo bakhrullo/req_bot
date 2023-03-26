@@ -114,8 +114,8 @@ async def get_loc_conf(m: Message, state: FSMContext, config):
     if data["country"] == "Toshkent shahar bo'ylab":
         text = f"👤 Ism: {data['name']}\n" \
                f"📱 Raqam: {data['phone']}\n" \
-               f"🛣 Yo'nalish {data['country']}\n" \
-               f"📦 Mahsulo: {data['prod']}\n" \
+               f"🛣 Yo'nalish: {data['country']}\n" \
+               f"📦 Mahsulot: {data['prod']}\n" \
                f"💲 To'lov qiymati: {data['sum']}\n" \
                f"💲 To'lov holati: {data['sum_type']}\n" \
                f"🌐 Tarmoq: {data['social']}\n" \
@@ -126,8 +126,8 @@ async def get_loc_conf(m: Message, state: FSMContext, config):
     elif data["country"] == "Viloyatlarga":
         text = f"👤 Ism: {data['name']}\n" \
                f"📱 Raqam: {data['phone']}\n" \
-               f"🛣 Yo'nalish {data['country']}\n" \
-               f"📦 Mahsulo: {data['prod']}\n" \
+               f"🛣 Yo'nalish: {data['country']}\n" \
+               f"📦 Mahsulot: {data['prod']}\n" \
                f"💲 To'lov qiymati: {data['sum']}\n" \
                f"📪 Pochta: {data['pochta']}\n" \
                f"🏙 Hudud: {data['area']}\n" \
@@ -139,8 +139,8 @@ async def get_loc_conf(m: Message, state: FSMContext, config):
     elif data["country"] == "Dunyo bo'ylab":
         text = f"👤 Ism: {data['name']}\n" \
                f"📱 Raqam: {data['phone']}\n" \
-               f"🛣 Yo'nalish {data['country']}\n" \
-               f"📦 Mahsulo: {data['prod']}\n" \
+               f"🛣 Yo'nalish: {data['country']}\n" \
+               f"📦 Mahsulot: {data['prod']}\n" \
                f"💲 To'lov qiymati: {data['sum']}\n" \
                f"📪 Pochta: {data['pochta']}\n" \
                f"🌐 Tarmoq: {data['social']}\n" \
