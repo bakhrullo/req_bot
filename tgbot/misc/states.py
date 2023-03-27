@@ -26,3 +26,15 @@ class UserVillageState(StatesGroup):
 class UserWorldState(StatesGroup):
     get_del = State()
 
+
+class AdminState(StatesGroup):
+    get_param = State()
+
+
+class AdminAddState(StatesGroup):
+    get_name = State()
+
+
+class AdminDelState(StatesGroup):
+    get_id = State()
+

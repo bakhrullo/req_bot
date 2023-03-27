@@ -6,8 +6,10 @@ from aiogram.types import Message
 from geopy.adapters import AioHTTPAdapter
 from geopy.geocoders import Nominatim
 
+from tgbot.filters.locfilter import LocFilter
 from tgbot.keyboards.reply import *
 from tgbot.misc.states import UserState, UserCityState, UserVillageState, UserWorldState
+from tgbot.services.google_sheets import worksheet
 
 
 async def user_start(message: Message):
@@ -85,7 +87,7 @@ async def get_sum_type(m: Message, state: FSMContext):
 
 async def get_social(m: Message, state: FSMContext):
     await state.update_data(social=m.text)
-    await m.answer("Qaysi mutaxassis qabul qildi 👨‍💻", reply_markup=operator_kb)
+    await m.answer("Qaysi mutaxassis qabul qildi 👨‍💻", reply_markup=await operators_kb())
     await UserState.next()
 
 
@@ -97,15 +99,18 @@ async def get_operator(m: Message, state: FSMContext):
 
 async def get_del_date(m: Message, state: FSMContext):
     await state.update_data(date=m.text)
-    await m.answer("Manzilni yuboring", reply_markup=loc_kb)
+    await m.answer("Iltimos manzilni yuboring yoki lokatsiya tashlang")
     await UserState.next()
 
 
 async def get_loc(m: Message, state: FSMContext):
-    async with Nominatim(user_agent="inn_bot", adapter_factory=AioHTTPAdapter) as geolocator:
-        location = await geolocator.reverse(f"{m.location.latitude}, {m.location.longitude}")
-    await state.update_data(address=location.address, long=m.location.longitude, lat=m.location.latitude)
-    await m.answer(f"{location.address}\nTasdiqlaysizmi?", reply_markup=loc_conf_kb)
+    if m.content_type == "location":
+        async with Nominatim(user_agent="inn_bot", adapter_factory=AioHTTPAdapter) as geolocator:
+            location = await geolocator.reverse(f"{m.location.latitude}, {m.location.longitude}")
+        await state.update_data(address=location.address, long=m.location.longitude, lat=m.location.latitude, loc_tye=True)
+        return await m.answer(f"{location.address}\nTasdiqlaysizmi?", reply_markup=loc_conf_kb)
+    await state.update_data(loc_type=False, address=m.text)
+    return await m.answer(f"{m.text}\nTasdiqlaysizmi?", reply_markup=loc_conf_kb)
 
 
 async def get_loc_conf(m: Message, state: FSMContext, config):
@@ -123,6 +128,9 @@ async def get_loc_conf(m: Message, state: FSMContext, config):
                f"📅 Yetkazib berish muddati: {data['date']}\n" \
                f"📍 Manzil:\n{data['address']}\n"
         group = config.tg_bot.city
+        await worksheet(name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
+                        sum=data['sum'], sum_type=data['sum_type'], pochta=' ', area=' ', social=data['social'],
+                        operator=data['operator'], date=data['date'], address=data['address'])
     elif data["country"] == "Viloyatlarga":
         text = f"👤 Ism: {data['name']}\n" \
                f"📱 Raqam: {data['phone']}\n" \
@@ -136,6 +144,9 @@ async def get_loc_conf(m: Message, state: FSMContext, config):
                f"📅 Yetkazib berish muddati: {data['date']}\n" \
                f"📍 Manzil:\n{data['address']}\n"
         group = config.tg_bot.village
+        await worksheet(name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
+                        sum=data['sum'], sum_type=' ', pochta=data['pochta'], area=data['area'], social=data['social'],
+                        operator=data['operator'], date=data['date'], address=data['address'])
     elif data["country"] == "Dunyo bo'ylab":
         text = f"👤 Ism: {data['name']}\n" \
                f"📱 Raqam: {data['phone']}\n" \
@@ -148,10 +159,13 @@ async def get_loc_conf(m: Message, state: FSMContext, config):
                f"📅 Yetkazib berish muddati: {data['date']}\n" \
                f"📍 Manzil:\n{data['address']}\n"
         group = config.tg_bot.world
+        await worksheet(name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
+                        sum=data['sum'], sum_type=' ', pochta=data['pochta'], area=' ', social=data['social'],
+                        operator=data['operator'], date=data['date'], address=data['address'])
     mess = await m.bot.send_message(chat_id=group, text=text)
     await m.bot.send_location(chat_id=group, latitude=data["lat"], longitude=data["long"],
                               reply_to_message_id=mess.message_id)
-    await m.answer("So'rovingiz qabul qilindi\nTez orada siz bilan bog'lanamiz👨‍💻", reply_markup=remove_kb)
+    await m.answer("Ma'lumotlar saqlab qolindi", reply_markup=remove_kb)
     await state.finish()
 
 
@@ -170,6 +184,6 @@ def register_user(dp: Dispatcher):
     dp.register_message_handler(get_social, state=UserState.get_social)
     dp.register_message_handler(get_operator, state=UserState.get_operator)
     dp.register_message_handler(get_del_date, state=UserState.get_del_date)
-    dp.register_message_handler(get_loc, content_types="location", state=UserState.get_loc)
+    dp.register_message_handler(get_loc, LocFilter(), content_types=["location", "text"], state=UserState.get_loc)
     dp.register_message_handler(get_loc_conf, Text(equals="✅ Manzilni tasdiqlash"), state=UserState.get_loc)
 

@@ -7,14 +7,18 @@ from aiogram.contrib.fsm_storage.redis import RedisStorage2
 
 from tgbot.config import load_config
 from tgbot.filters.admin import AdminFilter
+from tgbot.filters.back import BackFilter
+from tgbot.filters.locfilter import LocFilter
 from tgbot.handlers.admin import register_admin
 from tgbot.handlers.echo import register_echo
 from tgbot.handlers.user import register_user
 from tgbot.middlewares.environment import EnvironmentMiddleware
+from tgbot.models.db import create_db
 
 logger = logging.getLogger(__name__)
 
 DEBUG = False
+
 
 def register_all_middlewares(dp, config):
     dp.setup_middleware(EnvironmentMiddleware(config=config))
@@ -22,6 +26,8 @@ def register_all_middlewares(dp, config):
 
 def register_all_filters(dp):
     dp.filters_factory.bind(AdminFilter)
+    dp.filters_factory.bind(BackFilter)
+    dp.filters_factory.bind(LocFilter)
 
 
 def register_all_handlers(dp):
@@ -47,7 +53,7 @@ async def main():
     register_all_middlewares(dp, config)
     register_all_filters(dp)
     register_all_handlers(dp)
-
+    await create_db(config)
     # start
     try:
         await dp.start_polling()

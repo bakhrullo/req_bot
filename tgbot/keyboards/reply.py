@@ -1,5 +1,7 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
+from tgbot.models.db_cmd import get_opers
+
 direction_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
     KeyboardButton("Toshkent shahar bo'ylab"),
     KeyboardButton("Viloyatlarga"),
@@ -25,11 +27,13 @@ social_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
     KeyboardButton("Instagram"),
     KeyboardButton("Qo'ng'iroq"))
 
-operator_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
-    KeyboardButton("Alpha"),
-    KeyboardButton("Betta"),
-    KeyboardButton("Gamma"),
-    KeyboardButton("Delta"))
+
+async def operators_kb():
+    opers = await get_opers()
+    operator_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    for oper in opers:
+        operator_kb.insert(KeyboardButton(oper.name))
+    return operator_kb
 
 pay_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
     KeyboardButton("To'langan ✅"),
@@ -42,7 +46,6 @@ loc_kb = ReplyKeyboardMarkup(resize_keyboard=True).add(
     KeyboardButton("Manzilni yuborish 📍", request_location=True))
 
 loc_conf_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2).add(
-    KeyboardButton(text='📍 Qayta yuborish', request_location=True),
     KeyboardButton(text='✅ Manzilni tasdiqlash'))
 
 remove_kb = ReplyKeyboardRemove()
