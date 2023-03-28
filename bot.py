@@ -14,6 +14,7 @@ from tgbot.handlers.echo import register_echo
 from tgbot.handlers.user import register_user
 from tgbot.middlewares.environment import EnvironmentMiddleware
 from tgbot.models.db import create_db
+from tgbot.models.db_cmd import create_counter
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ async def main():
     register_all_filters(dp)
     register_all_handlers(dp)
     await create_db(config)
+    await create_counter()
     # start
     try:
         await dp.start_polling()

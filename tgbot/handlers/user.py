@@ -9,6 +9,7 @@ from geopy.geocoders import Nominatim
 from tgbot.filters.locfilter import LocFilter
 from tgbot.keyboards.reply import *
 from tgbot.misc.states import UserState, UserCityState, UserVillageState, UserWorldState
+from tgbot.models.db_cmd import get_counter
 from tgbot.services.google_sheets import worksheet
 
 
@@ -19,20 +20,18 @@ async def user_start(message: Message):
 
 async def get_country(m: Message, state: FSMContext):
     await state.update_data(country=m.text)
-    await m.answer("Iltimos ismingizni kiriting 👤", reply_markup=remove_kb)
+    await m.answer("Iltimos mijoz ismini kiriting 👤", reply_markup=remove_kb)
     await UserState.next()
 
 
 async def get_name(m: Message, state: FSMContext):
     await state.update_data(name=m.text)
-    await m.answer("Iltimos telefon raqamingizni yuboring 📲",
-                   reply_markup=contact_kb)
+    await m.answer("Iltimos mijoz telefon raqamini yuboring 📲")
     await UserState.next()
 
 
 async def get_contact(m: Message, state: FSMContext):
-    phone = m.contact.phone_number
-    await state.update_data(phone=phone)
+    await state.update_data(phone=m.text)
     await m.answer("Iltimos olgan mahsulotlaringizni yuboring 🛒", reply_markup=remove_kb)
     await UserState.next()
 
@@ -107,14 +106,15 @@ async def get_loc(m: Message, state: FSMContext):
     if m.content_type == "location":
         async with Nominatim(user_agent="inn_bot", adapter_factory=AioHTTPAdapter) as geolocator:
             location = await geolocator.reverse(f"{m.location.latitude}, {m.location.longitude}")
-        await state.update_data(address=location.address, long=m.location.longitude, lat=m.location.latitude, loc_tye=True)
+        await state.update_data(address=location.address, long=m.location.longitude, lat=m.location.latitude, loc_tye="T")
         return await m.answer(f"{location.address}\nTasdiqlaysizmi?", reply_markup=loc_conf_kb)
-    await state.update_data(loc_type=False, address=m.text)
+    await state.update_data(loc_type="F", address=m.text)
     return await m.answer(f"{m.text}\nTasdiqlaysizmi?", reply_markup=loc_conf_kb)
 
 
 async def get_loc_conf(m: Message, state: FSMContext, config):
     data = await state.get_data()
+    count = await get_counter()
     group, text = "", ""
     if data["country"] == "Toshkent shahar bo'ylab":
         text = f"👤 Ism: {data['name']}\n" \
@@ -128,7 +128,7 @@ async def get_loc_conf(m: Message, state: FSMContext, config):
                f"📅 Yetkazib berish muddati: {data['date']}\n" \
                f"📍 Manzil:\n{data['address']}\n"
         group = config.tg_bot.city
-        await worksheet(name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
+        await worksheet(no=count, name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
                         sum=data['sum'], sum_type=data['sum_type'], pochta=' ', area=' ', social=data['social'],
                         operator=data['operator'], date=data['date'], address=data['address'])
     elif data["country"] == "Viloyatlarga":
@@ -144,7 +144,7 @@ async def get_loc_conf(m: Message, state: FSMContext, config):
                f"📅 Yetkazib berish muddati: {data['date']}\n" \
                f"📍 Manzil:\n{data['address']}\n"
         group = config.tg_bot.village
-        await worksheet(name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
+        await worksheet(no=count, name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
                         sum=data['sum'], sum_type=' ', pochta=data['pochta'], area=data['area'], social=data['social'],
                         operator=data['operator'], date=data['date'], address=data['address'])
     elif data["country"] == "Dunyo bo'ylab":
@@ -159,21 +159,24 @@ async def get_loc_conf(m: Message, state: FSMContext, config):
                f"📅 Yetkazib berish muddati: {data['date']}\n" \
                f"📍 Manzil:\n{data['address']}\n"
         group = config.tg_bot.world
-        await worksheet(name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
+        await worksheet(no=count, name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
                         sum=data['sum'], sum_type=' ', pochta=data['pochta'], area=' ', social=data['social'],
                         operator=data['operator'], date=data['date'], address=data['address'])
     mess = await m.bot.send_message(chat_id=group, text=text)
-    await m.bot.send_location(chat_id=group, latitude=data["lat"], longitude=data["long"],
-                              reply_to_message_id=mess.message_id)
-    await m.answer("Ma'lumotlar saqlab qolindi", reply_markup=remove_kb)
-    await state.finish()
+    if data["loc_type"] == "T":
+        await m.bot.send_location(chat_id=group, latitude=data["lat"], longitude=data["long"],
+                                  reply_to_message_id=mess.message_id)
+    await m.answer(f"✅ Ma'lumotlar saqlab qolindi\n"
+                   f"{text}", reply_markup=remove_kb)
+    await m.answer("Yo'nalishlardan birini tanlang 👇", reply_markup=direction_kb)
+    await UserState.get_country.set()
 
 
 def register_user(dp: Dispatcher):
     dp.register_message_handler(user_start, commands=["start"], state="*")
     dp.register_message_handler(get_country, state=UserState.get_country)
     dp.register_message_handler(get_name, state=UserState.get_name)
-    dp.register_message_handler(get_contact, content_types="contact", state=UserState.get_number)
+    dp.register_message_handler(get_contact, state=UserState.get_number)
     dp.register_message_handler(get_prod, state=UserState.get_prod)
     dp.register_message_handler(get_sum, state=UserState.get_sum)
     dp.register_message_handler(get_sum, state=UserState.get_sum)
