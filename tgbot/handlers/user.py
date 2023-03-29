@@ -113,56 +113,45 @@ async def get_loc(m: Message, state: FSMContext):
 
 
 async def get_loc_conf(m: Message, state: FSMContext, config):
+    res = await state.get_state()
+    await m.answer("Izoh qoldiring 💬", reply_markup=comm_kb)
+    await UserState.next()
+
+
+async def get_comm(m: Message, state: FSMContext, config):
     data = await state.get_data()
     count = await get_counter()
-    group, text = "", ""
+    comm = " "
+    group, text = "", f"👤 Ism: {data['name']}\n" \
+                      f"📱 Raqam: {data['phone']}\n" \
+                      f"🛣 Yo'nalish: {data['country']}\n" \
+                      f"📦 Mahsulot: {data['prod']}\n" \
+                      f"💲 To'lov qiymati: {data['sum']}\n"
+
     if data["country"] == "Toshkent shahar bo'ylab":
-        text = f"👤 Ism: {data['name']}\n" \
-               f"📱 Raqam: {data['phone']}\n" \
-               f"🛣 Yo'nalish: {data['country']}\n" \
-               f"📦 Mahsulot: {data['prod']}\n" \
-               f"💲 To'lov qiymati: {data['sum']}\n" \
-               f"💲 To'lov holati: {data['sum_type']}\n" \
-               f"🌐 Tarmoq: {data['social']}\n" \
-               f"👨‍💻 Mutaxassis: {data['operator']}\n" \
-               f"📅 Yetkazib berish muddati: {data['date']}\n" \
-               f"📍 Manzil:\n{data['address']}\n"
-        group = config.tg_bot.city
-        await worksheet(no=count, name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
-                        sum=data['sum'], sum_type=data['sum_type'], pochta=' ', area=' ', social=data['social'],
-                        operator=data['operator'], date=data['date'], address=data['address'])
+        text += f"💲 To'lov holati: {data['sum_type']}\n"
+        group, sum_type = config.tg_bot.city, data["sum_type"]
+        pochta, area = " ", " "
     elif data["country"] == "Viloyatlarga":
-        text = f"👤 Ism: {data['name']}\n" \
-               f"📱 Raqam: {data['phone']}\n" \
-               f"🛣 Yo'nalish: {data['country']}\n" \
-               f"📦 Mahsulot: {data['prod']}\n" \
-               f"💲 To'lov qiymati: {data['sum']}\n" \
-               f"📪 Pochta: {data['pochta']}\n" \
-               f"🏙 Hudud: {data['area']}\n" \
-               f"🌐 Tarmoq: {data['social']}\n" \
-               f"👨‍💻 Mutaxassis: {data['operator']}\n" \
-               f"📅 Yetkazib berish muddati: {data['date']}\n" \
-               f"📍 Manzil:\n{data['address']}\n"
-        group = config.tg_bot.village
-        await worksheet(no=count, name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
-                        sum=data['sum'], sum_type=' ', pochta=data['pochta'], area=data['area'], social=data['social'],
-                        operator=data['operator'], date=data['date'], address=data['address'])
+        text += f"📪 Pochta: {data['pochta']}\n" \
+                f"🏙 Hudud: {data['area']}\n"
+        group, sum_type = config.tg_bot.village, " "
+        pochta, area = data['pochta'], data['area']
     elif data["country"] == "Dunyo bo'ylab":
-        text = f"👤 Ism: {data['name']}\n" \
-               f"📱 Raqam: {data['phone']}\n" \
-               f"🛣 Yo'nalish: {data['country']}\n" \
-               f"📦 Mahsulot: {data['prod']}\n" \
-               f"💲 To'lov qiymati: {data['sum']}\n" \
-               f"📪 Pochta: {data['pochta']}\n" \
-               f"🌐 Tarmoq: {data['social']}\n" \
-               f"👨‍💻 Mutaxassis: {data['operator']}\n" \
-               f"📅 Yetkazib berish muddati: {data['date']}\n" \
-               f"📍 Manzil:\n{data['address']}\n"
-        group = config.tg_bot.world
-        await worksheet(no=count, name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
-                        sum=data['sum'], sum_type=' ', pochta=data['pochta'], area=' ', social=data['social'],
-                        operator=data['operator'], date=data['date'], address=data['address'])
+        text += f"📪 Pochta: {data['pochta']}\n"
+        group, sum_type = config.tg_bot.world, " "
+        pochta , area = data['pochta'], ' '
+    text += f"🌐 Tarmoq: {data['social']}\n" \
+            f"👨‍💻 Mutaxassis: {data['operator']}\n" \
+            f"📅 Yetkazib berish muddati: {data['date']}\n" \
+            f"📍 Manzil:\n{data['address']}\n"
+    if m.text != "Tashalb ketish":
+        comm = m.text
+        text += f"💬 Izoh: {comm}"
     mess = await m.bot.send_message(chat_id=group, text=text)
+    await worksheet(no=count, name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
+                    sum=data['sum'], sum_type=sum_type, pochta=pochta, area=area, social=data['social'],
+                    operator=data['operator'], date=data['date'], address=data['address'], comm=comm)
     if data["loc_type"] == "T":
         await m.bot.send_location(chat_id=group, latitude=data["lat"], longitude=data["long"],
                                   reply_to_message_id=mess.message_id)
@@ -189,4 +178,5 @@ def register_user(dp: Dispatcher):
     dp.register_message_handler(get_del_date, state=UserState.get_del_date)
     dp.register_message_handler(get_loc, LocFilter(), content_types=["location", "text"], state=UserState.get_loc)
     dp.register_message_handler(get_loc_conf, Text(equals="✅ Manzilni tasdiqlash"), state=UserState.get_loc)
+    dp.register_message_handler(get_comm, state=UserState.get_comment)
 

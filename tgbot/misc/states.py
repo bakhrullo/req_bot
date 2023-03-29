@@ -11,7 +11,7 @@ class UserState(StatesGroup):
     get_operator = State()
     get_del_date = State()
     get_loc = State()
-    get_loc_conf = State()
+    get_comment = State()
 
 
 class UserCityState(StatesGroup):
