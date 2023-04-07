@@ -60,6 +60,6 @@ loc_conf_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2).add(
     KeyboardButton(text='✅ Manzilni tasdiqlash'))
 
 comm_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2).add(
-    KeyboardButton(text='Tashalb ketish'))
+    KeyboardButton(text='Tashalab ketish'))
 
 remove_kb = ReplyKeyboardRemove()
