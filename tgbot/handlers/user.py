@@ -106,7 +106,7 @@ async def get_loc(m: Message, state: FSMContext):
     if m.content_type == "location":
         async with Nominatim(user_agent="inn_bot", adapter_factory=AioHTTPAdapter) as geolocator:
             location = await geolocator.reverse(f"{m.location.latitude}, {m.location.longitude}")
-        await state.update_data(address=location.address, long=m.location.longitude, lat=m.location.latitude, loc_tye="T")
+        await state.update_data(address=location.address, long=m.location.longitude, lat=m.location.latitude, loc_type="T")
         return await m.answer(f"{location.address}\nTasdiqlaysizmi?", reply_markup=loc_conf_kb)
     await state.update_data(loc_type="F", address=m.text)
     return await m.answer(f"{m.text}\nTasdiqlaysizmi?", reply_markup=loc_conf_kb)
