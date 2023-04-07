@@ -172,7 +172,7 @@ async def get_comm(m: Message, state: FSMContext, config):
         pochta , area = data['pochta'], ' '
     text += f"📅 Yetkazib berish muddati: {data['date']}\n" \
             f"📍 Manzil:\n{data['address']}\n"
-    if m.text != "Tashalb ketish":
+    if m.text != "Tashalab ketish":
         comm = m.text
         text += f"💬 Izoh: {comm}"
     media = MediaGroup()
