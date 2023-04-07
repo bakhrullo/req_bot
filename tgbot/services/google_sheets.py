@@ -1,5 +1,7 @@
+import datetime
 import gspread
 import pandas as pd
+import pytz
 from google.oauth2.service_account import Credentials
 
 
@@ -13,6 +15,6 @@ async def worksheet(**kwargs):
                        'Mahsulot': [kwargs["prod"]], 'To\'lov qiymati': [kwargs["sum"]], 'To\'lov holati': [kwargs["sum_type"]],
                        'Pochta': [kwargs["pochta"]], 'Hudud': [kwargs["area"]], 'Tarmoq': [kwargs["social"]],
                        'Mutaxassis': [kwargs["operator"]], 'Yetkazib berish muddati': [kwargs["date"]], 'Manzil': [kwargs["address"]],
-                       'Izoh': [kwargs["comm"]]})
+                       'Izoh': [kwargs["comm"]], 'Sana': datetime.datetime.now(pytz.timezone('Asia/Tashkent')).strftime("%H:%M %d-%m-%Y")})
     df_values = df.values.tolist()
     gs.values_append("Лист1", {'valueInputOption': 'RAW'}, {'values': df_values})

@@ -6,6 +6,9 @@ class UserState(StatesGroup):
     get_name = State()
     get_number = State()
     get_prod = State()
+    get_prod_photo = State()
+    get_wrapper = State()
+    get_wrap_photo = State()
     get_sum = State()
     get_social = State()
     get_operator = State()
@@ -16,7 +19,7 @@ class UserState(StatesGroup):
 
 class UserCityState(StatesGroup):
     get_sum_type = State()
-
+    get_del = State()
 
 class UserVillageState(StatesGroup):
     get_del = State()

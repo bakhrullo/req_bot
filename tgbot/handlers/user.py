@@ -1,7 +1,7 @@
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
-from aiogram.types import Message
+from aiogram.types import Message, MediaGroup
 
 from geopy.adapters import AioHTTPAdapter
 from geopy.geocoders import Nominatim
@@ -38,6 +38,24 @@ async def get_contact(m: Message, state: FSMContext):
 
 async def get_prod(m: Message, state: FSMContext):
     await state.update_data(prod=m.text)
+    await m.answer("Mahsulotning rasmini yuboring 📷")
+    await UserState.next()
+
+
+async def get_prod_photo(m: Message, state: FSMContext):
+    await state.update_data(prod_photo=m.photo[0].file_id)
+    await m.answer("O'rab berish turini tanlang 🎁", reply_markup=wrapper_kb)
+    await UserState.next()
+
+
+async def get_wrapper(m: Message, state: FSMContext):
+    await state.update_data(wrapper=m.text)
+    await m.answer("Qog'ozning rasmini yuboring 📷", reply_markup=remove_kb)
+    await UserState.next()
+
+
+async def get_wrap_photo(m: Message, state: FSMContext):
+    await state.update_data(wrap_photo=m.photo[0].file_id)
     await m.answer("Iltimos to'lov qiymatini yuboring 💵")
     await UserState.next()
 
@@ -106,32 +124,43 @@ async def get_loc(m: Message, state: FSMContext):
     if m.content_type == "location":
         async with Nominatim(user_agent="inn_bot", adapter_factory=AioHTTPAdapter) as geolocator:
             location = await geolocator.reverse(f"{m.location.latitude}, {m.location.longitude}")
-        await state.update_data(address=location.address, long=m.location.longitude, lat=m.location.latitude, loc_tye="T")
+        await state.update_data(address=location.address, long=m.location.longitude, lat=m.location.latitude, loc_type="T")
         return await m.answer(f"{location.address}\nTasdiqlaysizmi?", reply_markup=loc_conf_kb)
     await state.update_data(loc_type="F", address=m.text)
     return await m.answer(f"{m.text}\nTasdiqlaysizmi?", reply_markup=loc_conf_kb)
 
 
-async def get_loc_conf(m: Message, state: FSMContext, config):
-    res = await state.get_state()
+async def get_loc_conf(m: Message, state: FSMContext):
+    data = await state.get_data()
+    if data["country"] == "Toshkent shahar bo'ylab":
+        await UserCityState.get_del.set()
+        return await m.answer("Yetkazib berish turini tanlang 🚖", reply_markup=delivery_city_kb)
     await m.answer("Izoh qoldiring 💬", reply_markup=comm_kb)
     await UserState.next()
+
+
+async def get_city_del(m: Message, state: FSMContext):
+    await state.update_data(city_del=m.text)
+    await m.answer("Izoh qoldiring 💬", reply_markup=comm_kb)
+    await UserState.get_comment.set()
 
 
 async def get_comm(m: Message, state: FSMContext, config):
     data = await state.get_data()
     count = await get_counter()
     comm = " "
-    group, text = "", f"👤 Ism: {data['name']}\n" \
+    group, text = "", f"{count}.\n" \
+                      f"👤 Ism: {data['name']}\n" \
                       f"📱 Raqam: {data['phone']}\n" \
-                      f"🛣 Yo'nalish: {data['country']}\n" \
                       f"📦 Mahsulot: {data['prod']}\n" \
+                      f"🎁 O'rab berish turi: {data['wrapper']}\n" \
                       f"💲 To'lov qiymati: {data['sum']}\n"
 
     if data["country"] == "Toshkent shahar bo'ylab":
-        text += f"💲 To'lov holati: {data['sum_type']}\n"
+        text += f"💲 To'lov holati: {data['sum_type']}\n" \
+                f"🚖 Yetkazib berish turi: {data['city_del']}\n"
         group, sum_type = config.tg_bot.city, data["sum_type"]
-        pochta, area = " ", " "
+        pochta, area = data['city_del'], " "
     elif data["country"] == "Viloyatlarga":
         text += f"📪 Pochta: {data['pochta']}\n" \
                 f"🏙 Hudud: {data['area']}\n"
@@ -141,22 +170,26 @@ async def get_comm(m: Message, state: FSMContext, config):
         text += f"📪 Pochta: {data['pochta']}\n"
         group, sum_type = config.tg_bot.world, " "
         pochta , area = data['pochta'], ' '
-    text += f"🌐 Tarmoq: {data['social']}\n" \
-            f"👨‍💻 Mutaxassis: {data['operator']}\n" \
-            f"📅 Yetkazib berish muddati: {data['date']}\n" \
+    text += f"📅 Yetkazib berish muddati: {data['date']}\n" \
             f"📍 Manzil:\n{data['address']}\n"
     if m.text != "Tashalb ketish":
         comm = m.text
         text += f"💬 Izoh: {comm}"
-    mess = await m.bot.send_message(chat_id=group, text=text)
+    media = MediaGroup()
+    media.attach_photo(data["prod_photo"])
+    media.attach_photo(data["wrap_photo"], caption=text)
+    mess = await m.bot.send_media_group(chat_id=group, media=media)
     await worksheet(no=count, name=data['name'], phone=data['phone'], country=data['country'], prod=data['prod'],
                     sum=data['sum'], sum_type=sum_type, pochta=pochta, area=area, social=data['social'],
                     operator=data['operator'], date=data['date'], address=data['address'], comm=comm)
+
     if data["loc_type"] == "T":
         await m.bot.send_location(chat_id=group, latitude=data["lat"], longitude=data["long"],
-                                  reply_to_message_id=mess.message_id)
+                                  reply_to_message_id=mess[0].message_id)
+    await m.bot.send_message(chat_id=group, text='➖➖➖➖➖➖➖➖')
     await m.answer(f"✅ Ma'lumotlar saqlab qolindi\n"
                    f"{text}", reply_markup=remove_kb)
+
     await m.answer("Yo'nalishlardan birini tanlang 👇", reply_markup=direction_kb)
     await UserState.get_country.set()
 
@@ -167,6 +200,9 @@ def register_user(dp: Dispatcher):
     dp.register_message_handler(get_name, state=UserState.get_name)
     dp.register_message_handler(get_contact, state=UserState.get_number)
     dp.register_message_handler(get_prod, state=UserState.get_prod)
+    dp.register_message_handler(get_prod_photo, content_types="photo", state=UserState.get_prod_photo)
+    dp.register_message_handler(get_wrapper, state=UserState.get_wrapper)
+    dp.register_message_handler(get_wrap_photo, content_types="photo", state=UserState.get_wrap_photo)
     dp.register_message_handler(get_sum, state=UserState.get_sum)
     dp.register_message_handler(get_sum, state=UserState.get_sum)
     dp.register_message_handler(get_del_world, state=UserWorldState.get_del)
@@ -177,6 +213,7 @@ def register_user(dp: Dispatcher):
     dp.register_message_handler(get_operator, state=UserState.get_operator)
     dp.register_message_handler(get_del_date, state=UserState.get_del_date)
     dp.register_message_handler(get_loc, LocFilter(), content_types=["location", "text"], state=UserState.get_loc)
+    dp.register_message_handler(get_city_del, state=UserCityState.get_del)
     dp.register_message_handler(get_loc_conf, Text(equals="✅ Manzilni tasdiqlash"), state=UserState.get_loc)
     dp.register_message_handler(get_comm, state=UserState.get_comment)
 

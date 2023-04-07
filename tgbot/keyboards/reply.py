@@ -11,6 +11,17 @@ delivery_village_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add
     KeyboardButton("Yubor express"),
     KeyboardButton("BTS express"))
 
+delivery_city_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
+    KeyboardButton("Yandex"),
+    KeyboardButton("Kuryer"))
+
+wrapper_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
+    KeyboardButton("Kraft paket"),
+    KeyboardButton("Gulli paket"),
+    KeyboardButton("Karobka"),
+    KeyboardButton("O'ramsiz holat")
+)
+
 yubor_kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
     KeyboardButton("Markaz"),
     KeyboardButton("Chekka hudud"))
